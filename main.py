@@ -1,8 +1,9 @@
-import os, requests, youtube_dl, discord
+import os, requests, youtube_dl, discord, asyncio
 from bs4 import BeautifulSoup
 from discord.ext import commands
+from discord.ext.tasks import loop
 
-token = 'NjY0MDg2NTY0MDUzMzE5NzAw.XhR-jQ.dJQNv62KTGHA5pKxR-c6tP8S_Hk'
+token = 'NjY0MDg2NTY0MDUzMzE5NzAw.XhcNqQ.XvILEyYiHKdqg6QTAraau2LXtx0'
 
 client = commands.Bot(command_prefix='/')
 
@@ -14,6 +15,20 @@ options = {
   'noplaylist' : True,    # only download single song, not playlist
 }
 
+rgbw = [
+  {'r' : 255, 'g' : 0, 'b' : 0},
+  {'r' : 255, 'g' : 128, 'b' : 0},
+  {'r' : 255, 'g' : 255, 'b' : 0},
+  {'r' : 128, 'g' : 255, 'b' : 0},
+  {'r' : 0, 'g' : 255, 'b' : 255},
+  {'r' : 0, 'g' : 0, 'b' : 255},
+  {'r' : 127, 'g' : 0, 'b' : 255},
+  {'r' : 255, 'g' : 0, 'b' : 255},
+  {'r' : 255, 'g' : 0, 'b' : 127},
+  {'r' : 255, 'g' : 0, 'b' : 77},
+]
+
+roles = []
 
 def query_url(query):
     query = query.replace(' ', '+')
@@ -24,29 +39,25 @@ def query_url(query):
 
 @client.event
 async def on_ready():
-    print('Bot online.')
+  print('BOT ONLINE')
 
-@client.command(pass_context=True)
-async def leave(ctx):
-    await ctx.voice_client.disconnect()
-
-@client.command(pass_context=True)
-async def play(ctx, query):
-    with youtube_dl.YoutubeDL(options) as ydl:
-        ydl.download([query_url(query)])
-    channel = ctx.message.author.voice.channel
-    vc = await channel.connect()
-    vc.play(discord.FFmpegPCMAudio('temp.mp3'))
-    vc.source = discord.PCMVolumeTransformer(vc.source)
-    vc.source.volume = 1
+@loop()
+async def rainbow():
+      for rgb in rgbw:
+        for role in roles:
+          await role.edit(colour=discord.Colour.from_rgb(rgb['r'], rgb['g'], rgb['b']))
 
 @client.command(pass_context=True)
 async def rme(ctx):
-    ctx.message.author.roles[-1].edit(discord.Colour.from_rgb(255, 0, 0))
+  roles.append(ctx.message.author.roles[-1])
+  print('Rainbow Users:\n')
+  print(roles)
 
 @client.command(pass_context=True)
 async def logo(ctx):
     channel = ctx.message.channel
     logo = discord.File('Adsomnia.png')
     await channel.send(file=logo)
+
+rainbow.start()
 client.run(token)
